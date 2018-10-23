@@ -1,0 +1,40 @@
+version: '3.6'
+
+services:
+
+  mariadb:
+    image: mariadb
+    environment:
+     MYSQL_ROOT_PASSWORD: somewordpress
+     MYSQL_DATABASE: wordpress
+     MYSQL_USER: wordpress
+     MYSQL_PASSWORD: wordpress
+
+  wordpress:
+    depends_on:
+     - mariadb
+    image: wordpress:latest
+    ports:
+     - "8000:80"
+    restart: always
+    volumes:
+      - "wp_install:/var/www/html"
+    environment:
+      WORDPRESS_DB_HOST: mariadb:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+
+  wpcli:
+    depends_on:
+      - wordpress
+    image: wordpress:cli
+    volumes: ["wp_install:/var/www/html"]
+    command: sh -c "sleep 20 && wp core install --path=/var/www/html --url=localhost:8000 --title=\"US Ignite Test\" --admin_user=admin --admin_password=usignite --admin_email=test@us-ignite.org"
+
+volumes:
+  wp_install:
+
+# Run at command line after bringing new containers up.
+# Updating Site URL
+#  > docker-compose run wpcli wp option update home 'http://localhost:8000'
+#  > docker-compose run wpcli wp option update siteurl 'http://localhost:8000'
