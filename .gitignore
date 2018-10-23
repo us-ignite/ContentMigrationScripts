@@ -1,6 +1,7 @@
 # Locally added ignores
 *.json # don't check in the data dump
 *.csv # don't check in spreadsheet exports
+.idea # exclude Pycharm project folder.
 
 # Standard Python GitIgnore from https://github.com/github/gitignore/blob/master/Python.gitignore
 # Byte-compiled / optimized / DLL files
