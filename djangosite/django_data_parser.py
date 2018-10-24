@@ -28,14 +28,14 @@ def get_ignite_user_data(content):
     return users
 
 
-def get_blogposts(content):
+def get_blog_posts(content):
     posts = []
     for item in content:
         if item['model'] == 'blog.blogpost':
             posts.append(item)
     return posts
 
-def get_blogcatagories(content):
+def get_blog_catagories(content):
     catagories = []
     for item in content:
         if item['model'] == 'blog.blogcategory':
@@ -123,7 +123,7 @@ def get_app_media(content):
 
 if __name__ == "__main__":
     data = load_website_data()
-    pprint(get_blogcatagories(data))
-    for post in get_blogposts(data):
+    pprint(get_blog_catagories(data))
+    for post in get_blog_posts(data):
         if post['fields']['categories']:
             pprint(post)

@@ -1,5 +1,6 @@
 from wordpress_xmlrpc import Client, WordPressUser, WordPressPost, WordPressTerm
 from wordpress_xmlrpc.methods.posts import NewPost, GetPosts, EditPost
+from wordpress_xmlrpc.methods.users import GetUsers
 from wordpress_xmlrpc.methods.taxonomies import GetTerms, GetTaxonomies, GetTaxonomy, NewTerm
 from slugify import slugify
 from xmlrpc.client import Fault
@@ -51,6 +52,10 @@ APPLICATION_FEATURES = {
     24: 'Distributed Computing'
 }
 
+DJANGO_USERS = [] # List of django user models
+DJANGO_BLOG_CATAGORIES = []
+WORDPRESS_USERS = [] # List of WordPressUser objects.
+
 try:
     API = Client('http://localhost:8000/xmlrpc.php', 'admin@us-ignite.org', 'usignite')
 except:
@@ -80,8 +85,13 @@ def _add_application(app_data, app_urls):
     post.content = _format_app_content(app_data, app_urls)
     post.date = _return_datetime(app_data['fields']['created'])
     post.date_modified = _return_datetime(app_data['fields']['updated'])
-    # TODO Assign Author
-    # TODO set catagories and tags
+    # Assign Author
+    if app_data['fields']['owner']:
+        wp_userid = _get_wordpress_user_id_by_email(_get_django_user_email_by_id(app_data['fields']['owner']))
+        if wp_userid:
+            print("found user", wp_userid)
+            post.user = wp_userid
+    # catagories and tags
     if app_data['fields']['sector']:
         post.terms_names = {
             'category': [APPLICATION_SECTORS[app_data['fields']['sector']]]
@@ -133,12 +143,28 @@ def _format_app_content(app_data, app_urls):
     return _clean_text(content)
 
 
+def _get_django_user_email_by_id(id):
+    email = None
+    for user in DJANGO_USERS:
+        if user['pk'] == id:
+            email = user['fields']['email']
+    return email
+
+
+def _get_wordpress_user_id_by_email(email):
+    id = None
+    for user in WORDPRESS_USERS:
+        if user.email == email:
+            id = user.id
+    return id
+
+
 def import_blogposts(content):
-    for post in dp.get_blogposts(content):
-            _add_blogpost(post)
+    for post in dp.get_blog_posts(content):
+        _add_blogpost(post)
 
 
-def _add_blogpost(post_data, post_catagories):
+def _add_blogpost(post_data):
     '''
     Adds a blog post parsed from blog.blogpost
 
@@ -155,8 +181,21 @@ def _add_blogpost(post_data, post_catagories):
     post.slug = post_data['fields']['slug']
     if post_data['fields']['status'] == 1:
         post.post_status = 'publish'
-    # TODO Assign Author
+    # Assign Author
+    if post_data['fields']['user']:
+        wp_userid = _get_wordpress_user_id_by_email(_get_django_user_email_by_id(post_data['fields']['user']))
+        if wp_userid:
+            print("found user", wp_userid)
+            post.user = wp_userid
     # TODO set catagories and tags
+    if post_data['fields']['categories']:
+        catagories = []
+        for category in DJANGO_BLOG_CATAGORIES:
+            if category in post_data['fields']['categories']:
+                catagories.append(category['fields']['name'])
+        post.terms_names = {
+            'category': catagories
+        }
     try:
         if post_data['fields']['status'] != 3:
             post.id = API.call(NewPost(post))
@@ -198,4 +237,7 @@ def _wrap_tag(item, tag='P'):
 
 if __name__ == "__main__":
     data = dp.load_website_data()
-    import_applications(data)
+    DJANGO_USERS = dp.get_all_user_data(data)
+    DJANGO_BLOG_CATAGORIES = dp.get_blog_catagories(data)
+    WORDPRESS_USERS = API.call(GetUsers())
+    import_blogposts(data)
