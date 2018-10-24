@@ -2,6 +2,7 @@
 *.json
 *.csv
 .idea
+djangosite/modelsamples/
 
 # Standard Python GitIgnore from https://github.com/github/gitignore/blob/master/Python.gitignore
 # Byte-compiled / optimized / DLL files

@@ -1,0 +1,84 @@
+This is a sample of the structure of a blog.blogpost
+
+{'fields': {'_meta_title': '',
+            'allow_comments': False,
+            'categories': [],
+            'comments_count': 0,
+            'content': '\n'
+                       '\n'
+                       '\n'
+                       '\n'
+                       '<p>By Glenn Ricart</p>\n'
+                       '<p>The Fiber to the Home group led by Heather Gold put '
+                       'on an engaging and provocative session at the Consumer '
+                       'Electronics Show (CES) in Las Vegas this week.  The '
+                       'topic was “The Future of Unlimited Bandwidth,” and '
+                       'anyone who knows me knows I am passionate about that, '
+                       'so I was pleased to be able to be part of a '
+                       'star-studded panel.  One way I knew for sure that the '
+                       'panel was a good one is that it literally kept nearly '
+                       'a hundred people from their lunch – the panel was '
+                       'scheduled for 12:15-1:15 pm.  I was joined by '
+                       'Bernhardt Deutsch of Corning (incidentally a US Ignite '
+                       'supporter) and Joe Reardon, former mayor of Kansas '
+                       'City who helped bring in Google.</p>\n'
+                       '<p> CES itself is back to setting records.  152,000 '
+                       'people are expected to attend the event and the '
+                       'exhibits were spread over 2 million net square feet of '
+                       'space in the Las Vegas Convention Center, several big '
+                       'hotels, and tents erected over parking lots.  The '
+                       'legendary stories of hour-long waits in the taxi line '
+                       'were all true.</p>\n'
+                       '<p> The big electronics companies put on elaborate '
+                       'extravaganzas.   The picture above is a curved 3-D '
+                       'screen something like sixty feet long featured by LG.  '
+                       'There were new concept cars with the beginnings of '
+                       'auto-driving (currently auto-parking and auto-stopping '
+                       'to avoid collisions) which are now available for '
+                       'sale.</p>\n'
+                       '<p> Fortunately, for me, the newest of the new '
+                       'companies were all gathered together in three '
+                       'ballrooms at the Venetian.   One thing that took my '
+                       'eye was a new version of sending data by modulating '
+                       'LED lights so rapidly they simply appear to be turned '
+                       'on brightly.  With the declining costs of LED '
+                       'lighting, it raises brand new possibilities for both '
+                       'indoor and outdoor high speed data communications.  It '
+                       'could also be used for indoor location awareness.  (I '
+                       'can see two different LED lights, but “A” is stronger '
+                       'by 50%, so I must be two-thirds of the way from “B” '
+                       'toward “A”.  (For those troubled by my '
+                       '“over-simplified” math, remember that LEDs don’t give '
+                       'off Gaussian spheres of light and that light is '
+                       'perceived logarithmically.) </p>\n'
+                       '<p>With some luck, I’ll get the people demonstrating '
+                       'the advanced optical networking to come to our '
+                       'Applications Summit in June and you can see it '
+                       'yourself without waiting an hour for a taxi.</p>\n',
+            'created': '2014-03-30T12:54:31.128Z',
+            'description': 'By Glenn Ricart The Fiber to the Home group led by '
+                           'Heather Gold put on an engaging and provocative '
+                           'session at the Consumer Electronics Show (CES) in '
+                           'Las Vegas this week.  The topic was “The Future of '
+                           'Unlimited Bandwidth,” and anyone who knows me '
+                           'knows I am passionate about that, so I was pleased '
+                           'to […]\n',
+            'expiry_date': None,
+            'featured_image': '',
+            'gen_description': False,
+            'in_sitemap': True,
+            'keywords_string': '',
+            'publish_date': '2014-01-13T21:05:47Z',
+            'rating_average': 0.0,
+            'rating_count': 0,
+            'rating_sum': 0,
+            'related_posts': [],
+            'short_url': None,
+            'site': 1,
+            'slug': '2-million-square-foot-playroom',
+            'status': 2,
+            'title': '2 Million Square Foot Playroom',
+            'updated': '2014-03-15T19:42:26Z',
+            'user': 318},
+ 'model': 'blog.blogpost',
+ 'pk': 1}
