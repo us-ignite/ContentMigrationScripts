@@ -17,13 +17,13 @@ APPLICATION_STAGE = {
 
 # Based on parsing data in apps.sectors
 APPLICATION_SECTORS = {
-    1: 'healthcare',
-    2: 'education & workforce',
-    3: 'energy',
-    4: 'transportation',
-    5: 'advanced manufaturing',
-    6: 'public safety',
-    7: 'other'
+    1: 'Healthcare',
+    2: 'Education & Workforce',
+    3: 'Energy',
+    4: 'Transportation',
+    5: 'Advanced Manufaturing',
+    6: 'Public Safety',
+    7: 'Other'
 }
 
 APPLICATION_FEATURES = {
@@ -57,19 +57,12 @@ except:
     pass
 
 
-def import_blogposts(posts):
-    for post in posts:
-        if post['model'] == 'blog.blogpost':
-            _add_blogpost(post)
-
-
-def import_applications(data):
+def import_applications(content):
     app_urls = {}
-    for url in dp.get_app_urls(data):
+    for url in dp.get_app_urls(content):
         app_urls[url['fields']['application']] = url
-    pprint(app_urls)
 
-    for item in data:
+    for item in content:
         if item['model'] == 'apps.application':
             _add_application(item, app_urls)
 
@@ -87,9 +80,13 @@ def _add_application(app_data, app_urls):
     post.content = _format_app_content(app_data, app_urls)
     post.date = _return_datetime(app_data['fields']['created'])
     post.date_modified = _return_datetime(app_data['fields']['updated'])
-
     # TODO Assign Author
     # TODO set catagories and tags
+    if app_data['fields']['sector']:
+        post.terms_names = {
+            'category': [APPLICATION_SECTORS[app_data['fields']['sector']]]
+        }
+
     if app_data['fields']['status'] == 1:
         post.post_status = 'publish'
     try:
@@ -120,6 +117,10 @@ def _format_app_content(app_data, app_urls):
     content += _wrap_tag(app_data['fields']['impact_statement'])
 
     # If an acknowlegement exists, add that.
+    if app_data['fields']['acknowledgments']:
+        ackknowlegement_text = _wrap_tag('Acknowlegements:', 'strong')
+        ackknowlegement_text += " %s" % app_data['fields']['acknowledgments']
+        content += _wrap_tag(ackknowlegement_text)
 
     # If team information is there, add that.
     if app_data['fields']['team_name'] or app_data['fields']['team_description']:
@@ -132,7 +133,12 @@ def _format_app_content(app_data, app_urls):
     return _clean_text(content)
 
 
-def _add_blogpost(post_data):
+def import_blogposts(content):
+    for post in dp.get_blogposts(content):
+            _add_blogpost(post)
+
+
+def _add_blogpost(post_data, post_catagories):
     '''
     Adds a blog post parsed from blog.blogpost
 
@@ -147,7 +153,8 @@ def _add_blogpost(post_data):
     post.date = _return_datetime(post_data['fields']['publish_date'])
     post.date_modified = _return_datetime(post_data['fields']['updated'])
     post.slug = post_data['fields']['slug']
-    post.post_status = 'publish'
+    if post_data['fields']['status'] == 1:
+        post.post_status = 'publish'
     # TODO Assign Author
     # TODO set catagories and tags
     try:
