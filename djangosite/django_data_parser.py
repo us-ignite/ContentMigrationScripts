@@ -63,11 +63,26 @@ def get_app_features(data):
             features.append(item)
     return features
 
+def get_app_urls(data):
+    urls = []
+    for item in data:
+        if item['model'] == 'apps.applicationurl':
+            urls.append(item)
+    return urls
+
 
 def _print_ignite_users(data):
     users = get_ignite_user_data(data)
     for user in users:
         print(user['fields']['email'])
+
+def _duplicate_app_urls(data):
+    app_pk = []
+    for item in data:
+        if item['model'] == 'apps.applicatinurl':
+            if item['fields']['application'] in app_pk:
+                print("App Exists")
+            app_pk.append(item['fields']['application'])
 
 def get_application_catagories(data):
     catagories = set()
@@ -79,6 +94,4 @@ def get_application_catagories(data):
 
 if __name__ == "__main__":
     data =  load_website_data()
-    features = get_app_features(data)
-    for feature in features:
-        print ("%d: '%s'," % (feature['pk'], feature['fields']['name']))
+    pprint(get_app_urls(data)[0])

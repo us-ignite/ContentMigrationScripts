@@ -63,13 +63,18 @@ def import_blogposts(posts):
             _add_blogpost(post)
 
 
-def import_applications(apps):
-    for app in apps:
-        if app['model'] == 'apps.application':
-            _add_application(app)
+def import_applications(data):
+    app_urls = {}
+    for url in dp.get_app_urls(data):
+        app_urls[url['fields']['application']] = url
+    pprint(app_urls)
+
+    for item in data:
+        if item['model'] == 'apps.application':
+            _add_application(item, app_urls)
 
 
-def _add_application(app_data):
+def _add_application(app_data, app_urls):
     '''
     Adds an application parse from apps.application
 
@@ -79,9 +84,10 @@ def _add_application(app_data):
     post = WordPressPost()
     post.title = app_data['fields']['name']
     post.slug = app_data['fields']['slug']
-    post.content = _format_app_content(app_data)
+    post.content = _format_app_content(app_data, app_urls)
     post.date = _return_datetime(app_data['fields']['created'])
     post.date_modified = _return_datetime(app_data['fields']['updated'])
+
     # TODO Assign Author
     # TODO set catagories and tags
     if app_data['fields']['status'] == 1:
@@ -89,13 +95,11 @@ def _add_application(app_data):
     try:
         if app_data['fields']['status'] != 3:
             post.id = API.call(NewPost(post))
-            print("created application", post.id, post.title)
     except Fault as err:
         pprint(post)
-        print(err.faultCode, err.faultString)
 
 
-def _format_app_content(app_data):
+def _format_app_content(app_data, app_urls):
     '''
     Concatinates several previous fields into a single post body
 
@@ -103,9 +107,21 @@ def _format_app_content(app_data):
     :return:
     '''
     content = ''
-    # TODO add project url and homepage
+    # Add project url and homepage
+    if app_data['pk'] in app_urls:
+        project_text = _wrap_tag("Project Link:", 'strong')
+        project_text += ' <a href="%s" target="blank">%s</a>' % (
+            app_urls[app_data['pk']]['fields']['url'],
+            app_urls[app_data['pk']]['fields']['name']
+        )
+        content += _wrap_tag(project_text)
+
     content += _wrap_tag(app_data['fields']['summary'])
     content += _wrap_tag(app_data['fields']['impact_statement'])
+
+    # If an acknowlegement exists, add that.
+
+    # If team information is there, add that.
     if app_data['fields']['team_name'] or app_data['fields']['team_description']:
         team_text = _wrap_tag("Team Information:", 'strong')
         if app_data['fields']['team_name'] :
@@ -120,7 +136,7 @@ def _add_blogpost(post_data):
     '''
     Adds a blog post parsed from blog.blogpost
 
-    Model published status codes are as follows:     PUBLISHED = 1, DRAFT = 2, DELETED = 3
+    Model published status codes are as follows:  PUBLISHED = 1, DRAFT = 2, DELETED = 3
 
     :param post_data: Python dict of post structure.  See modelsamples/blogpost_sample.txt for structure.
     :return:
@@ -175,5 +191,4 @@ def _wrap_tag(item, tag='P'):
 
 if __name__ == "__main__":
     data = dp.load_website_data()
-    apps = dp.get_applications(data)
-    import_applications(apps)
+    import_applications(data)
