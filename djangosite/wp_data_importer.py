@@ -1,8 +1,6 @@
-from wordpress_xmlrpc import Client, WordPressUser, WordPressPost, WordPressTerm
-from wordpress_xmlrpc.methods.posts import NewPost, GetPosts, EditPost
+from wordpress_xmlrpc import Client, WordPressPost, WordPressPage
+from wordpress_xmlrpc.methods.posts import NewPost
 from wordpress_xmlrpc.methods.users import GetUsers
-from wordpress_xmlrpc.methods.taxonomies import GetTerms, GetTaxonomies, GetTaxonomy, NewTerm
-from slugify import slugify
 from xmlrpc.client import Fault
 from datetime import datetime
 import djangosite.django_data_parser as dp
@@ -52,9 +50,9 @@ APPLICATION_FEATURES = {
     24: 'Distributed Computing'
 }
 
-DJANGO_USERS = [] # List of django user models
-DJANGO_BLOG_CATAGORIES = []
-WORDPRESS_USERS = [] # List of WordPressUser objects.
+DJANGO_DATA = None
+DJANGO_PAGE_LIST = {}
+WORDPRESS_USERS = []  # List of WordPressUser objects.
 
 try:
     API = Client('http://localhost:8000/xmlrpc.php', 'admin@us-ignite.org', 'usignite')
@@ -62,17 +60,17 @@ except:
     pass
 
 
-def import_applications(content):
+def import_applications():
     app_urls = {}
-    for url in dp.get_app_urls(content):
+    for url in dp.get_content(DJANGO_DATA, 'apps.applicationurl'):
         app_urls[url['fields']['application']] = url
 
-    for item in content:
+    for item in DJANGO_DATA:
         if item['model'] == 'apps.application':
-            _add_application(item, app_urls)
+            _add_application(item)
 
 
-def _add_application(app_data, app_urls):
+def _add_application(app_data):
     '''
     Adds an application parse from apps.application
 
@@ -82,7 +80,7 @@ def _add_application(app_data, app_urls):
     post = WordPressPost()
     post.title = app_data['fields']['name']
     post.slug = app_data['fields']['slug']
-    post.content = _format_app_content(app_data, app_urls)
+    post.content = _format_app_content(app_data)
     post.date = _return_datetime(app_data['fields']['created'])
     post.date_modified = _return_datetime(app_data['fields']['updated'])
     # Assign Author
@@ -91,11 +89,12 @@ def _add_application(app_data, app_urls):
         if wp_userid:
             print("found user", wp_userid)
             post.user = wp_userid
+    post.terms_names = {
+        'category': ['Application']
+    }
     # catagories and tags
     if app_data['fields']['sector']:
-        post.terms_names = {
-            'category': [APPLICATION_SECTORS[app_data['fields']['sector']]]
-        }
+            post.terms_names['post_tag'] = [APPLICATION_SECTORS[app_data['fields']['sector']]]
 
     if app_data['fields']['status'] == 1:
         post.post_status = 'publish'
@@ -106,7 +105,7 @@ def _add_application(app_data, app_urls):
         pprint(post)
 
 
-def _format_app_content(app_data, app_urls):
+def _format_app_content(app_data):
     '''
     Concatinates several previous fields into a single post body
 
@@ -114,21 +113,13 @@ def _format_app_content(app_data, app_urls):
     :return:
     '''
     content = ''
-    # Add project url and homepage
-    if app_data['pk'] in app_urls:
-        project_text = _wrap_tag("Project Link:", 'strong')
-        project_text += ' <a href="%s" target="blank">%s</a>' % (
-            app_urls[app_data['pk']]['fields']['url'],
-            app_urls[app_data['pk']]['fields']['name']
-        )
-        content += _wrap_tag(project_text)
 
     content += _wrap_tag(app_data['fields']['summary'])
     content += _wrap_tag(app_data['fields']['impact_statement'])
 
     # If an acknowlegement exists, add that.
     if app_data['fields']['acknowledgments']:
-        ackknowlegement_text = _wrap_tag('Acknowlegements:', 'strong')
+        ackknowlegement_text = _wrap_tag('Acknowledgments:', 'strong')
         ackknowlegement_text += " %s" % app_data['fields']['acknowledgments']
         content += _wrap_tag(ackknowlegement_text)
 
@@ -140,12 +131,33 @@ def _format_app_content(app_data, app_urls):
         if app_data['fields']['team_description']:
             team_text += " " + app_data['fields']['team_description']
         content += team_text
+
+    # Merging links from apps.application.fields.website and apps.applicationurl
+    links = []
+    if app_data['fields']['website']:
+        links.append(
+            _wrap_tag('<a href="%s" target="blank">Project Homepage</a>' % (app_data['fields']['website']), 'li')
+        )
+
+    for item in dp.get_content(DJANGO_DATA, 'apps.applicationurl'):
+        if item['fields']['application'] == app_data['pk']:
+            links.append(
+                _wrap_tag('<a href="%s" target="blank">%s</a>' % (
+                    item['fields']['url'],
+                    item['fields']['name']
+                ),
+                          'li')
+            )
+
+    if links:
+        content += _wrap_tag('Project Links', 'h3')
+        content += _wrap_tag(''.join(links), 'ul')
     return _clean_text(content)
 
 
 def _get_django_user_email_by_id(id):
     email = None
-    for user in DJANGO_USERS:
+    for user in dp.get_content(DJANGO_DATA, 'profiles.user'):
         if user['pk'] == id:
             email = user['fields']['email']
     return email
@@ -160,9 +172,8 @@ def _get_wordpress_user_id_by_email(email):
 
 
 def import_blogposts(content):
-    for post in dp.get_blog_posts(content):
+    for post in dp.get_content(content, 'blog.blogpost'):
         _add_blogpost(post)
-
 
 def _add_blogpost(post_data):
     '''
@@ -179,7 +190,7 @@ def _add_blogpost(post_data):
     post.date = _return_datetime(post_data['fields']['publish_date'])
     post.date_modified = _return_datetime(post_data['fields']['updated'])
     post.slug = post_data['fields']['slug']
-    if post_data['fields']['status'] == 1:
+    if post_data['fields']['status'] == 2:
         post.post_status = 'publish'
     # Assign Author
     if post_data['fields']['user']:
@@ -187,21 +198,54 @@ def _add_blogpost(post_data):
         if wp_userid:
             print("found user", wp_userid)
             post.user = wp_userid
-    # TODO set catagories and tags
+    # TODO set catagories and tags to proper taxonomy
+    post.terms_names = {
+        'category': ['Blogpost']
+    }
     if post_data['fields']['categories']:
-        catagories = []
-        for category in DJANGO_BLOG_CATAGORIES:
-            if category in post_data['fields']['categories']:
-                catagories.append(category['fields']['name'])
-        post.terms_names = {
-            'category': catagories
-        }
+        categories = []
+        for category in dp.get_content(DJANGO_DATA, 'blog.blogcategory'):
+            if category['pk'] in post_data['fields']['categories']:
+                categories.append(category['fields']['title'])
+        post.terms_names['post_tag'] = categories
     try:
         if post_data['fields']['status'] != 3:
             post.id = API.call(NewPost(post))
             print("created post", post.id, post.title)
     except Fault as err:
         pprint(post)
+        print(err.faultCode, err.faultString)
+
+
+def import_pages(content):
+    # Index page content to be references from metdata
+    page_content = {item['pk']: item for item in dp.get_content(content,'pages.richtextpage')}
+    # Iterate through page metadata to normalize with page content
+    for item in dp.get_content(content, 'pages.page'):
+        DJANGO_PAGE_LIST[item['pk']] = item
+        if item['pk'] in page_content:
+            DJANGO_PAGE_LIST[item['pk']]['fields']['content'] = page_content[item['pk']]['fields']['content']
+        else:
+            DJANGO_PAGE_LIST[item['pk']]['fields']['content'] = None
+    for page in DJANGO_PAGE_LIST.values():
+        _add_page(page)
+
+
+def _add_page(page_data):
+    page = WordPressPage()
+    page.title = page_data['fields']['title']
+    page.slug = page_data['fields']['slug']
+    page.order = page_data['fields']['_order']
+    page.date = _return_datetime(page_data['fields']['publish_date'])
+    page.date_modified = _return_datetime(page_data['fields']['updated'])
+    page.content = page_data['fields']['content']
+    if page_data['fields']['status'] == 1:
+        page.publish_status = 'publish'
+    try:
+        page.id = API.call(NewPost(page))
+        print("created page", page.id, page.title)
+    except Fault as err:
+        pprint(page)
         print(err.faultCode, err.faultString)
 
 
@@ -234,10 +278,8 @@ def _wrap_tag(item, tag='P'):
         text = "<%s>%s</%s>" % (tag, text, tag)
     return text
 
-
 if __name__ == "__main__":
-    data = dp.load_website_data()
-    DJANGO_USERS = dp.get_all_user_data(data)
-    DJANGO_BLOG_CATAGORIES = dp.get_blog_catagories(data)
-    WORDPRESS_USERS = API.call(GetUsers())
-    import_blogposts(data)
+    DJANGO_DATA = dp.load_website_data()
+    # import_pages(data)
+    import_applications()
+    # import_blogposts(data)

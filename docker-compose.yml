@@ -29,7 +29,7 @@ services:
       - wordpress
     image: wordpress:cli
     volumes: ["wp_install:/var/www/html"]
-    command: sh -c "sleep 20 && wp core install --path=/var/www/html --url=localhost:8000 --title=\"US Ignite Test\" --admin_user=admin@us-ignite.org --admin_password=usignite --admin_email=admin@us-ignite.org"
+    command: sh -c "sleep 20 && wp core install --path=/var/www/html --url=localhost:8000 --title=\"US Ignite Test\" --admin_user=admin@us-ignite.org --admin_password=usignite --admin_email=admin@us-ignite.org && wp user create mari.silbey@us-ignite.org mari.silbey@us-ignite.org --porcelain && wp user create scott.turnbull@us-ignite.org scott.turnbull@us-ignite.org --porcelain"
 
 volumes:
   wp_install:
