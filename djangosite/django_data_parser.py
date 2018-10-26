@@ -49,5 +49,6 @@ def get_content(content, model):
 
 if __name__ == "__main__":
     data = load_website_data()
-    pprint(get_content(data, 'apps.applicationmedia'))
+    for hub in get_content(data, 'hubs.hub'):
+        pprint(hub)
 

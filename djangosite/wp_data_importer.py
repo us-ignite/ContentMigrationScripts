@@ -83,27 +83,55 @@ def _add_application(app_data):
     post.content = _format_app_content(app_data)
     post.date = _return_datetime(app_data['fields']['created'])
     post.date_modified = _return_datetime(app_data['fields']['updated'])
+    # TODO add link to original listing
+    # TODO assign to proper taxonomies once those are in.
+    # TODO decide what to do with remaining media (likely toss)
+
     # Assign Author
     if app_data['fields']['owner']:
         wp_userid = _get_wordpress_user_id_by_email(_get_django_user_email_by_id(app_data['fields']['owner']))
         if wp_userid:
-            print("found user", wp_userid)
             post.user = wp_userid
-    post.terms_names = {
-        'category': ['Application']
-    }
-    # catagories and tags
-    if app_data['fields']['sector']:
-            post.terms_names['post_tag'] = [APPLICATION_SECTORS[app_data['fields']['sector']]]
 
+    # Assign Categories and Tags
+    post.terms_names = _parse_taxonomies(app_data)
+
+    # Put the previous page url in a custom field.
+    legacy_url = "https://www.us-ignite.org/apps/%s/" % (app_data['fields']['slug'])
+    post.custom_fields = [
+        {'key': 'legacy_url', 'value': legacy_url}
+    ]
+
+    # Set publish status and push to site
     if app_data['fields']['status'] == 1:
         post.post_status = 'publish'
     try:
         if app_data['fields']['status'] != 3:
             post.id = API.call(NewPost(post))
     except Fault as err:
-        pprint(post)
+        pprint(post, err.faultString)
 
+
+def _parse_taxonomies(app_data):
+    terms = {
+        'category': ['Application'],
+        'post_tag': []
+    }
+    hub = _get_hub_byid(app_data['fields']['hub'])
+    if hub:
+        terms['post_tag'].append(hub)
+    if app_data['fields']['sector']:
+        terms['post_tag'].append(APPLICATION_SECTORS[app_data['fields']['sector']])
+    if app_data['fields']['status']:
+        terms['post_tag'].append(APPLICATION_STAGE[app_data['fields']['status']])
+    return terms
+
+
+def _get_hub_byid(hub_id):
+    for hub in dp.get_content(DJANGO_DATA, 'hubs.hub'):
+        if hub['pk'] == hub_id:
+            return hub['fields']['name']
+    return None
 
 def _format_app_content(app_data):
     '''
@@ -112,7 +140,7 @@ def _format_app_content(app_data):
     :param app_data: Python dict of application structure. See modelsamples/application_sample.txt
     :return:
     '''
-    content = ''
+    content = _content_start(app_data)
 
     content += _wrap_tag(app_data['fields']['summary'])
     content += _wrap_tag(app_data['fields']['impact_statement'])
@@ -153,6 +181,31 @@ def _format_app_content(app_data):
         content += _wrap_tag('Project Links', 'h3')
         content += _wrap_tag(''.join(links), 'ul')
     return _clean_text(content)
+
+
+def _content_start(app_data):
+    '''
+    This parses the application media associated with the application and determines if there is a embedded video
+    that can start the content, otherwise returns a blank string.
+
+    :param app_data:
+    :return: Media embed string or blank string
+    '''
+    def _get_pk(elm): # sorting function for list sort below.
+        return elm['pk']
+
+    media_list = []
+    for item in dp.get_content(DJANGO_DATA, 'apps.applicationmedia'):
+        if item['fields']['application'] == app_data['pk']:
+            media_list.append(item)
+    media_list.sort(key=_get_pk)
+
+    content = []
+    for item in media_list:
+        if item['fields']['url']:
+            content.append('[embed]%s[/embed]' % item['fields']['url'])
+
+    return '\n'.join(content) or ''
 
 
 def _get_django_user_email_by_id(id):
@@ -196,7 +249,6 @@ def _add_blogpost(post_data):
     if post_data['fields']['user']:
         wp_userid = _get_wordpress_user_id_by_email(_get_django_user_email_by_id(post_data['fields']['user']))
         if wp_userid:
-            print("found user", wp_userid)
             post.user = wp_userid
     # TODO set catagories and tags to proper taxonomy
     post.terms_names = {
