@@ -5,8 +5,8 @@ from pprint import pprint
 IMPORT_FILE = 'website.json'
 
 
-def load_website_data():
-    with open(IMPORT_FILE) as f:
+def load_website_data(filename):
+    with open(filename) as f:
         datadump = json.load(f)
         return datadump
 

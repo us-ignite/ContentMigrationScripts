@@ -1,10 +1,10 @@
 from wordpress_xmlrpc import Client, WordPressPost, WordPressPage
 from wordpress_xmlrpc.methods.posts import NewPost
-from wordpress_xmlrpc.methods.users import GetUsers
 from xmlrpc.client import Fault
 from datetime import datetime
-import djangosite.django_data_parser as dp
+import django_data_parser as dp
 from pprint import pprint
+import argparse
 
 # Based on model data definition from https://github.com/us-ignite/us-ignite/blob/master/us_ignite/apps/models.py
 APPLICATION_STAGE = {
@@ -54,18 +54,16 @@ DJANGO_DATA = None
 DJANGO_PAGE_LIST = {}
 WORDPRESS_USERS = []  # List of WordPressUser objects.
 
-try:
-    API = Client('http://localhost:8000/xmlrpc.php', 'admin@us-ignite.org', 'usignite')
-except:
-    pass
+
+API = Client('http://localhost:8000/xmlrpc.php', 'admin@us-ignite.org', 'usignite')
 
 
-def import_applications():
+def import_applications(content):
     app_urls = {}
-    for url in dp.get_content(DJANGO_DATA, 'apps.applicationurl'):
+    for url in dp.get_content(content, 'apps.applicationurl'):
         app_urls[url['fields']['application']] = url
 
-    for item in DJANGO_DATA:
+    for item in content:
         if item['model'] == 'apps.application':
             _add_application(item)
 
@@ -330,8 +328,15 @@ def _wrap_tag(item, tag='P'):
         text = "<%s>%s</%s>" % (tag, text, tag)
     return text
 
+def run_imports():
+
+    import_pages(DJANGO_DATA)
+    import_applications(DJANGO_DATA)
+    import_blogposts(DJANGO_DATA)
+
 if __name__ == "__main__":
-    DJANGO_DATA = dp.load_website_data()
-    # import_pages(data)
-    import_applications()
-    # import_blogposts(data)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("import_file", help="Include the file to parse.")
+    args = parser.parse_args()
+    DJANGO_DATA = dp.load_website_data(args.import_file)
+    run_imports()

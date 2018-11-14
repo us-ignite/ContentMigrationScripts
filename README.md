@@ -70,3 +70,28 @@ userland proxy: mkdir /port/tcp:0.0.0.0:8000 :tcp:172.18.0.3:80: input/output er
 
 Seems like you have to let windows start, manually shutdown docker and manually restart it to release ports properly.
 
+Setting Up Anaconda
+-------------------
+
+If you use Anaconda Navigator, the dependencies for these scripts aren't in conda so you'll need to  install them via pip.
+
+First install pip in your conda environment.  Note run from your normal command line and **not** with the environment activated.
+
+ > conda install pip
+ 
+ Then open a terminal from Anaconda Navigator for that environment.  From the project root pip install the dependencies in the requirements file like so:
+ 
+ > pip install -r requirements.txt
+ 
+ 
+ Setting Up other environments
+ -----------------------------
+ 
+ If you're using some other venv system just set that up as you need and use the pip intall.
+ 
+ Executing the import
+ --------------------
+ 
+ For the import to work you'd need to have 
+ 
+ 
