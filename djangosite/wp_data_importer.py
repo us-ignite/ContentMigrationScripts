@@ -2,7 +2,7 @@ from wordpress_xmlrpc import Client, WordPressPost, WordPressPage
 from wordpress_xmlrpc.methods.posts import NewPost
 from xmlrpc.client import Fault
 from datetime import datetime
-import django_data_parser as dp
+import djangosite.django_data_parser as dp
 from pprint import pprint
 import argparse
 
@@ -328,15 +328,16 @@ def _wrap_tag(item, tag='P'):
         text = "<%s>%s</%s>" % (tag, text, tag)
     return text
 
-def run_imports():
-
+def run_imports(importfile):
+    global DJANGO_DATA
+    DJANGO_DATA = dp.load_website_data(importfile)
     import_pages(DJANGO_DATA)
     import_applications(DJANGO_DATA)
     import_blogposts(DJANGO_DATA)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("import_file", help="Include the file to parse.")
-    args = parser.parse_args()
-    DJANGO_DATA = dp.load_website_data(args.import_file)
-    run_imports()
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("import_file", help="Include the file to parse.")
+#     args = parser.parse_args()
+#     DJANGO_DATA = dp.load_website_data(args.import_file)
+#     run_imports()
