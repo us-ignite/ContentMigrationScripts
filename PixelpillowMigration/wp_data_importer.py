@@ -4,7 +4,6 @@ from xmlrpc.client import Fault
 from datetime import datetime
 import djangosite.django_data_parser as dp
 from pprint import pprint
-import argparse
 
 # Based on model data definition from https://github.com/us-ignite/us-ignite/blob/master/us_ignite/apps/models.py
 APPLICATION_STAGE = {
@@ -54,8 +53,11 @@ DJANGO_DATA = None
 DJANGO_PAGE_LIST = {}
 WORDPRESS_USERS = []  # List of WordPressUser objects.
 
+API = None
 
-API = Client('http://localhost:8000/xmlrpc.php', 'admin@us-ignite.org', 'usignite')
+# PYhy1ANJwCSMLULpVUh
+
+# API = Client('http://localhost:8000/xmlrpc.php', 'admin@us-ignite.org', 'usignite')
 
 
 def import_applications(content):
@@ -76,14 +78,14 @@ def _add_application(app_data):
     :return:
     '''
     post = WordPressPost()
+    post.post_type = 'application'
     post.title = app_data['fields']['name']
     post.slug = app_data['fields']['slug']
     post.content = _format_app_content(app_data)
     post.date = _return_datetime(app_data['fields']['created'])
     post.date_modified = _return_datetime(app_data['fields']['updated'])
-    # TODO add link to original listing
+
     # TODO assign to proper taxonomies once those are in.
-    # TODO decide what to do with remaining media (likely toss)
 
     # Assign Author
     if app_data['fields']['owner']:
@@ -107,21 +109,20 @@ def _add_application(app_data):
         if app_data['fields']['status'] != 3:
             post.id = API.call(NewPost(post))
     except Fault as err:
-        pprint(post, err.faultString)
+        pprint(err.faultString)
 
 
 def _parse_taxonomies(app_data):
     terms = {
-        'category': ['Application'],
-        'post_tag': []
+        # 'post_tag': []
     }
-    hub = _get_hub_byid(app_data['fields']['hub'])
-    if hub:
-        terms['post_tag'].append(hub)
+    # hub = _get_hub_byid(app_data['fields']['hub'])
+    # if hub:
+    #     terms['post_tag'].append(hub)
     if app_data['fields']['sector']:
-        terms['post_tag'].append(APPLICATION_SECTORS[app_data['fields']['sector']])
+        terms['sector'] = APPLICATION_SECTORS[app_data['fields']['sector']]
     if app_data['fields']['status']:
-        terms['post_tag'].append(APPLICATION_STAGE[app_data['fields']['status']])
+        terms['status'] = APPLICATION_STAGE[app_data['fields']['status']]
     return terms
 
 
@@ -328,12 +329,17 @@ def _wrap_tag(item, tag='P'):
         text = "<%s>%s</%s>" % (tag, text, tag)
     return text
 
-def run_imports(importfile):
+
+def run_imports(importfile, user, pw):
     global DJANGO_DATA
+    global API
     DJANGO_DATA = dp.load_website_data(importfile)
-    import_pages(DJANGO_DATA)
+    API = Client('http://us-ignite.local/xmlrpc.php', user, pw)
+
     import_applications(DJANGO_DATA)
-    import_blogposts(DJANGO_DATA)
+    # import_blogposts(DJANGO_DATA)
+    # import_pages(DJANGO_DATA)
+
 
 # if __name__ == "__main__":
 #     parser = argparse.ArgumentParser()
