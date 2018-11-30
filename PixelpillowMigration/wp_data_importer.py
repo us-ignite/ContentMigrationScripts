@@ -120,9 +120,9 @@ def _parse_taxonomies(app_data):
     # if hub:
     #     terms['post_tag'].append(hub)
     if app_data['fields']['sector']:
-        terms['sector'] = APPLICATION_SECTORS[app_data['fields']['sector']]
+        terms['sector'] = [APPLICATION_SECTORS[app_data['fields']['sector']]]
     if app_data['fields']['status']:
-        terms['status'] = APPLICATION_STAGE[app_data['fields']['status']]
+        terms['status'] = [APPLICATION_STAGE[app_data['fields']['status']]]
     return terms
 
 
@@ -237,6 +237,7 @@ def _add_blogpost(post_data):
     :return:
     '''
     post = WordPressPost()
+    post.post_type = 'news'
     post.title = post_data['fields']['title']
     post.content = post_data['fields']['content']
     post.date = _return_datetime(post_data['fields']['publish_date'])
@@ -250,15 +251,15 @@ def _add_blogpost(post_data):
         if wp_userid:
             post.user = wp_userid
     # TODO set catagories and tags to proper taxonomy
-    post.terms_names = {
-        'category': ['Blogpost']
-    }
-    if post_data['fields']['categories']:
-        categories = []
-        for category in dp.get_content(DJANGO_DATA, 'blog.blogcategory'):
-            if category['pk'] in post_data['fields']['categories']:
-                categories.append(category['fields']['title'])
-        post.terms_names['post_tag'] = categories
+    # post.terms_names = {
+    #     'category': ['Blogpost']
+    # }
+    # if post_data['fields']['categories']:
+    #     categories = []
+    #     for category in dp.get_content(DJANGO_DATA, 'blog.blogcategory'):
+    #         if category['pk'] in post_data['fields']['categories']:
+    #             categories.append(category['fields']['title'])
+    #     post.terms_names['post_tag'] = categories
     try:
         if post_data['fields']['status'] != 3:
             post.id = API.call(NewPost(post))
@@ -336,11 +337,11 @@ def run_imports(importfile, user, pw):
     DJANGO_DATA = dp.load_website_data(importfile)
     API = Client('http://us-ignite.local/xmlrpc.php', user, pw)
 
-    import_applications(DJANGO_DATA)
+    # import_applications(DJANGO_DATA)
     # import_blogposts(DJANGO_DATA)
-    # import_pages(DJANGO_DATA)
+    import_pages(DJANGO_DATA)
 
-
+# PYhy1ANJwCSMLULpVUh
 # if __name__ == "__main__":
 #     parser = argparse.ArgumentParser()
 #     parser.add_argument("import_file", help="Include the file to parse.")
